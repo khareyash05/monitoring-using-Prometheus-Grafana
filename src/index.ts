@@ -1,6 +1,6 @@
 import express from 'express';
 import { requestCount } from './monitoring/requestCount';
-import client from 'prom-client'
+import client from 'prom-client' // lets export metrics
 
 const app = express();
 
