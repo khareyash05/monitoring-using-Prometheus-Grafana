@@ -13,6 +13,13 @@ const activeUserGauge = new client.Gauge({
     labelNames:["method","route"]
 })
 
+const httpRequestDuration = new client.Histogram({
+    name:'http_request_duration',
+    help:"Duration",
+    labelNames:["method","route",'code'],
+    buckets:[0.1,5,15,50,100,300,500,1000,3000,5000]
+})
+
 export const requestCount = (req:Request,res:Response,next:NextFunction)=>{
     requestCounter.inc({
         method:req.method,
@@ -24,13 +31,24 @@ export const requestCount = (req:Request,res:Response,next:NextFunction)=>{
         route:req.path
     })
 
-    res.on("finish",()=>{ // when request finish decrement active user on the request
+    res.on("finish",()=>{ // when request finish dec`rement active user on the request
         setTimeout(()=>{ // just to check the increment and decrement
             activeUserGauge.dec({
                 method:req.method,
                 route:req.path
             })
         },10000)
+    }) 
+
+    const startTime = Date.now()
+
+    res.on('finish', () =>{
+        const endTime = Date.now()
+        httpRequestDuration.observe({
+            method:req.method,
+            route:req.path,
+            code:req.statusCode
+        },endTime-startTime)
     })
 
     next();
